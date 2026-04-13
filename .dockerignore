@@ -1,0 +1,36 @@
+# .dockerignore — exclude from Docker build context
+
+# Local runtime data (use Docker volumes instead)
+data/
+uploads/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Dev / test files
+logs_server.txt
+*.log
+run_tests.py
+test_api.py
+diagnose.py
+
+# Local environment
+.env
+.env.hostinger
+*.zip
+
+# Git
+.git/
+.gitignore
+
+# Windows-specific
+Thumbs.db
+desktop.ini
+
+# Hostinger-specific files not needed in Docker
+passenger_wsgi.py
+.htaccess
+requirements.txt
+requirements.hostinger.txt

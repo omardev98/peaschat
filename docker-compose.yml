@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+
+  localchat:
+    build: .
+    image: localchat:latest
+    container_name: localchat
+    restart: unless-stopped
+
+    # ── Environment ─────────────────────────────────────────────────────────
+    env_file: .env
+
+    environment:
+      - FLASK_DEBUG=false
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+      - TESSERACT_CMD=/usr/bin/tesseract
+      # Override in .env:
+      #   SECRET_KEY=change-me-in-production
+      #   ADMIN_USERNAME=admin
+      #   ADMIN_PASSWORD=your-password
+
+    # ── Volumes (SQLite DB + uploaded files persist across restarts) ────────
+    volumes:
+      - localchat_data:/app/data
+      - localchat_uploads:/app/uploads
+
+    # ── Traefik labels (HTTPS via Let's Encrypt) ────────────────────────────
+    labels:
+      - "traefik.enable=true"
+
+      # ── Router: redirect HTTP → HTTPS ───────────────────────────────────
+      - "traefik.http.routers.localchat-http.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.localchat-http.entrypoints=web"
+      - "traefik.http.routers.localchat-http.middlewares=redirect-to-https"
+
+      # ── Router: HTTPS ────────────────────────────────────────────────────
+      - "traefik.http.routers.localchat.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.localchat.entrypoints=websecure"
+      - "traefik.http.routers.localchat.tls=true"
+      - "traefik.http.routers.localchat.tls.certresolver=letsencrypt"
+
+      # ── Service: internal port ───────────────────────────────────────────
+      - "traefik.http.services.localchat.loadbalancer.server.port=5000"
+
+      # ── Middleware: HTTP → HTTPS redirect ────────────────────────────────
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+    networks:
+      - traefik_net
+
+    # ── No direct port exposure — Traefik handles it ─────────────────────
+    # ports:
+    #   - "5000:5000"  # uncomment only for local testing without Traefik
+
+# ── Named volumes ──────────────────────────────────────────────────────────
+volumes:
+  localchat_data:
+  localchat_uploads:
+
+# ── Connect to Traefik's external network ──────────────────────────────────
+networks:
+  traefik_net:
+    external: true

@@ -1,0 +1,37 @@
+# requirements.docker.txt
+# Production requirements for Docker deployment (VPS / cloud).
+# Ollama is optional (run as a sidecar container).
+# Tesseract OCR is installed via apt in the Dockerfile.
+
+# ── Web framework ──────────────────────────────────────────────────────────
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# ── Production WSGI ────────────────────────────────────────────────────────
+gunicorn>=22.0.0
+
+# ── File parsing ───────────────────────────────────────────────────────────
+pdfplumber>=0.11.0          # PDF text extraction
+pytesseract>=0.3.10         # Image OCR (requires Tesseract installed in image)
+Pillow>=10.0.0              # Image handling for OCR
+
+# ── Office file support ────────────────────────────────────────────────────
+openpyxl>=3.1.0             # .xlsx read
+xlrd>=2.0.1                 # .xls read
+python-docx>=1.1.0          # .docx / .doc read
+
+# ── HTTP client ────────────────────────────────────────────────────────────
+requests>=2.32.0
+httpx>=0.27.0               # async-capable, used by some AI SDKs
+
+# ── Utilities ──────────────────────────────────────────────────────────────
+python-dotenv>=1.0.0
+
+# ── Cloud AI clients ───────────────────────────────────────────────────────
+openai>=1.30.0              # Groq, OpenRouter, Together, Perplexity (OpenAI-compatible)
+google-generativeai>=0.7.0  # Google Gemini
+cohere>=5.0.0               # Cohere
+
+# ── NOT included (local-only features) ────────────────────────────────────
+# langchain* / faiss-cpu / numpy — only needed for local Ollama RAG mode
+# waitress                       — Windows-only WSGI; use gunicorn on Linux
