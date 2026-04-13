@@ -13,20 +13,29 @@ import logging
 from pathlib import Path
 from typing import List, Optional
 
-from langchain_community.vectorstores import FAISS
-
 from config import DATA_DIR, TOP_K_CHUNKS
-from app.services.embeddings import OllamaEmbeddings
 
 logger = logging.getLogger(__name__)
 
 # Singleton — one embedding model instance per process
-_embeddings: Optional[OllamaEmbeddings] = None
+_embeddings = None
 
 
-def _get_embeddings() -> OllamaEmbeddings:
+def _get_faiss():
+    try:
+        from langchain_community.vectorstores import FAISS
+        return FAISS
+    except ImportError as exc:
+        raise RuntimeError(
+            "langchain-community is not installed. "
+            "Run: pip install langchain-community faiss-cpu"
+        ) from exc
+
+
+def _get_embeddings():
     global _embeddings
     if _embeddings is None:
+        from app.services.embeddings import OllamaEmbeddings
         _embeddings = OllamaEmbeddings()
         logger.info(
             "Ollama embeddings initialised (model=%s)",
@@ -53,7 +62,8 @@ def build_and_save(document_id: str, chunks: List[str]) -> None:
     if not chunks:
         raise ValueError("Cannot index an empty chunk list.")
 
-    emb = _get_embeddings()
+    FAISS = _get_faiss()
+    emb   = _get_embeddings()
     logger.info("Building FAISS index for '%s' (%d chunks)…", document_id, len(chunks))
 
     store = FAISS.from_texts(chunks, emb)
@@ -61,13 +71,14 @@ def build_and_save(document_id: str, chunks: List[str]) -> None:
     logger.info("FAISS index saved for '%s'", document_id)
 
 
-def load_store(document_id: str) -> FAISS:
+def load_store(document_id: str):
     """Load and return the FAISS store for document_id."""
     if not _index_exists(document_id):
         raise FileNotFoundError(
             f"No vector index found for document_id='{document_id}'. "
             "Upload the document first."
         )
+    FAISS = _get_faiss()
     store = FAISS.load_local(
         str(_index_dir(document_id)),
         _get_embeddings(),

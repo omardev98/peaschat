@@ -12,20 +12,22 @@ import os
 from pathlib import Path
 from typing import List
 
-import pdfplumber
-from PIL import Image, ImageFilter, ImageEnhance
-import pytesseract
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
 from config import (
     CHUNK_SIZE, CHUNK_OVERLAP,
     TESSERACT_CMD, IMAGE_EXTENSIONS,
 )
 
-logger = logging.getLogger(__name__)
+try:
+    import pdfplumber
+    from PIL import Image, ImageFilter, ImageEnhance
+    import pytesseract
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+except ImportError:
+    pdfplumber = None
+    pytesseract = None
+    Image = None
 
-# Point pytesseract at the Tesseract binary (Windows requires this)
-pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
+logger = logging.getLogger(__name__)
 
 
 # ── PDF text extraction ────────────────────────────────────────────────────
@@ -137,6 +139,13 @@ def extract_text(file_path: str) -> str:
 # ── Chunking ────────────────────────────────────────────────────────────────
 
 def split_text(text: str) -> List[str]:
+    try:
+        from langchain_text_splitters import RecursiveCharacterTextSplitter
+    except ImportError as exc:
+        raise RuntimeError(
+            "langchain-text-splitters is not installed. "
+            "Run: pip install langchain-text-splitters"
+        ) from exc
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
         chunk_overlap=CHUNK_OVERLAP,
