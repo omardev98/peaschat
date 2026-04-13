@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings — DocAgent</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    /* ── Settings-specific styles ── */
+    .settings-wrap {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .settings-body {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+    .settings-section-title {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin: 2rem 0 .75rem;
+    }
+
+    /* ── Provider card ── */
+    .provider-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: .6rem;
+      overflow: hidden;
+      transition: border-color .15s;
+    }
+    .provider-card.active-card {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .provider-header {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .9rem 1.1rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .provider-radio {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .provider-name {
+      font-weight: 600;
+      font-size: .9rem;
+      flex: 1;
+    }
+    .badge {
+      font-size: .65rem;
+      font-weight: 700;
+      padding: .15rem .45rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .badge.free   { background: #14532d; color: #86efac; }
+    .badge.trial  { background: #1e3a5f; color: #93c5fd; }
+    .badge.paid   { background: #3b1515; color: #fca5a5; }
+    .badge.local  { background: #2d1b4e; color: #c4b5fd; }
+    .provider-toggle-icon {
+      color: var(--text-faint);
+      font-size: .8rem;
+      transition: transform .2s;
+    }
+    .provider-card.expanded .provider-toggle-icon {
+      transform: rotate(180deg);
+    }
+    .provider-body {
+      display: none;
+      padding: 0 1.1rem 1.1rem;
+      border-top: 1px solid var(--border);
+    }
+    .provider-card.expanded .provider-body {
+      display: block;
+    }
+
+    /* ── Form fields ── */
+    .field {
+      margin-top: .85rem;
+    }
+    .field label {
+      display: block;
+      font-size: .75rem;
+      color: var(--text-muted);
+      margin-bottom: .3rem;
+      font-weight: 500;
+    }
+    .field input[type="text"],
+    .field input[type="password"],
+    .field input[type="url"] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: .45rem .7rem;
+      font-size: .85rem;
+      font-family: inherit;
+      box-sizing: border-box;
+      transition: border-color .15s;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .key-row {
+      display: flex;
+      gap: .4rem;
+    }
+    .key-row input { flex: 1; }
+    .btn-show {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      padding: 0 .7rem;
+      font-size: .75rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-show:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Advanced toggle ── */
+    .advanced-toggle {
+      margin-top: .75rem;
+      font-size: .75rem;
+      color: var(--text-faint);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+    }
+    .advanced-toggle:hover { color: var(--text-muted); }
+    .advanced-fields { display: none; }
+    .advanced-fields.open { display: block; }
+
+    /* ── Action row ── */
+    .card-actions {
+      display: flex;
+      gap: .5rem;
+      margin-top: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn-save {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: .45rem 1rem;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn-save:hover { opacity: .85; }
+    .btn-save:disabled { opacity: .45; cursor: default; }
+    .btn-test {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      padding: .42rem .85rem;
+      font-size: .82rem;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-test:hover { border-color: var(--accent); color: var(--accent); }
+    .test-result {
+      font-size: .78rem;
+      padding: .3rem .6rem;
+      border-radius: 5px;
+      display: none;
+    }
+    .test-result.ok   { background: #14532d; color: #86efac; display: inline-block; }
+    .test-result.fail { background: #3b1515; color: #fca5a5; display: inline-block; }
+
+    /* ── Key reference table ── */
+    .key-ref {
+      margin-top: 2.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .key-ref-title {
+      padding: .75rem 1.1rem;
+      font-size: .8rem;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .key-ref table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .8rem;
+    }
+    .key-ref th {
+      background: var(--surface2);
+      padding: .5rem 1rem;
+      text-align: left;
+      color: var(--text-faint);
+      font-weight: 600;
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .key-ref td {
+      padding: .5rem 1rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      vertical-align: top;
+    }
+    .key-ref td a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .key-ref td a:hover { text-decoration: underline; }
+    .key-ref tr:hover td { background: var(--surface2); }
+
+    /* ── API Keys section ── */
+    .apikey-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: .5rem;
+      padding: .75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      font-size: .83rem;
+    }
+    .apikey-prefix {
+      font-family: monospace;
+      color: var(--accent);
+      font-size: .85rem;
+      flex: 1;
+    }
+    .apikey-name {
+      color: var(--text-muted);
+      font-size: .8rem;
+      flex: 2;
+    }
+    .apikey-meta {
+      color: var(--text-faint);
+      font-size: .72rem;
+      flex: 2;
+      line-height: 1.5;
+    }
+    .badge-active   { background: #14532d; color: #86efac; }
+    .badge-revoked  { background: #3b1515; color: #fca5a5; }
+    .apikey-actions { display: flex; gap: .4rem; }
+    .btn-revoke, .btn-del {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      padding: .3rem .65rem;
+      font-size: .75rem;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .btn-revoke:hover { border-color: #f59e0b; color: #f59e0b; }
+    .btn-del:hover    { border-color: #ef4444; color: #ef4444; }
+    .apikey-create {
+      display: flex;
+      gap: .5rem;
+      margin-top: .75rem;
+    }
+    .apikey-create input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: .42rem .7rem;
+      font-size: .83rem;
+      font-family: inherit;
+    }
+    .apikey-create input:focus { outline: none; border-color: var(--accent); }
+    .btn-create-key {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: .42rem 1rem;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn-create-key:hover    { opacity: .85; }
+    .btn-create-key:disabled { opacity: .45; cursor: default; }
+
+    /* ── Reveal modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      max-width: 520px;
+      width: 90%;
+    }
+    .modal-title {
+      font-size: .95rem;
+      font-weight: 700;
+      margin-bottom: .5rem;
+    }
+    .modal-warn {
+      font-size: .78rem;
+      color: #f59e0b;
+      background: #3b2000;
+      border: 1px solid #78350f;
+      border-radius: 6px;
+      padding: .5rem .75rem;
+      margin-bottom: 1rem;
+    }
+    .modal-key {
+      font-family: monospace;
+      font-size: .85rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .6rem .8rem;
+      word-break: break-all;
+      color: var(--accent);
+      margin-bottom: .75rem;
+    }
+    .modal-actions { display: flex; gap: .5rem; justify-content: flex-end; }
+    .btn-copy {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: .4rem .9rem;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-close-modal {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      padding: .4rem .9rem;
+      font-size: .82rem;
+      cursor: pointer;
+    }
+
+    /* ── No-provider banner ── */
+    .no-provider-banner {
+      background: #3b1515;
+      border: 1px solid #7f1d1d;
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      font-size: .84rem;
+      color: #fca5a5;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+    .no-provider-banner.show { display: block; }
+  </style>
+</head>
+<body>
+
+<div class="settings-wrap">
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <span class="navbar-icon">🧠</span>
+      <span class="navbar-title">DocAgent</span>
+    </div>
+
+    <div class="navbar-links">
+      <a href="/" class="nav-link">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Chat
+      </a>
+      <a href="/settings" class="nav-link active">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </a>
+      <a href="/api-keys" class="nav-link">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        API Keys
+      </a>
+      <a href="/logs" class="nav-link">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Logs
+      </a>
+    </div>
+
+    <div class="navbar-right">
+      <button class="nav-logout-btn" id="logoutBtn" title="Sign out">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Logout</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="settings-body">
+
+    <!-- No-provider warning -->
+    <div class="no-provider-banner" id="noProviderBanner">
+      ⚠️ No active provider is configured. Select a provider below and save your API key.
+    </div>
+
+    <div class="settings-section-title">AI Provider Configuration</div>
+    <p style="font-size:.82rem;color:var(--text-faint);margin:0 0 1.2rem;">
+      Select a provider, enter your API key, and click Save. Only one provider is active at a time.
+    </p>
+
+    <!-- Provider cards injected by JS -->
+    <div id="providerList"></div>
+
+    <!-- ── API Keys section ── -->
+    <div class="settings-section-title" style="margin-top:2.5rem;">API Keys</div>
+    <p style="font-size:.82rem;color:var(--text-faint);margin:0 0 1rem;">
+      Create keys to call the <code style="font-size:.8rem;color:var(--accent);">POST /v1/chat</code> API
+      from your own apps. Pass the key as
+      <code style="font-size:.8rem;color:var(--accent);">Authorization: Bearer lc_…</code>.
+      Keys are shown <strong>once</strong> at creation — store them safely.
+    </p>
+
+    <div id="apiKeyList"><p style="font-size:.8rem;color:var(--text-faint);">Loading…</p></div>
+
+    <div class="apikey-create">
+      <input id="newKeyName" type="text" placeholder="Key name — e.g. My Python App" maxlength="80">
+      <button class="btn-create-key" onclick="createApiKey()">+ Create Key</button>
+    </div>
+
+    <!-- Reveal modal -->
+    <div class="modal-overlay" id="keyModal">
+      <div class="modal-box">
+        <div class="modal-title">Your new API key</div>
+        <div class="modal-warn">
+          ⚠️ This key will only be shown ONCE. Copy and store it somewhere safe now.
+        </div>
+        <div class="modal-key" id="modalKeyValue"></div>
+        <div class="modal-actions">
+          <button class="btn-copy" onclick="copyKey()">Copy Key</button>
+          <button class="btn-close-modal" onclick="closeModal()">I've saved it</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Get API Keys reference -->
+    <div class="key-ref">
+      <div class="key-ref-title">Get your free API keys</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Provider</th>
+            <th>Free Tier</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Ollama</td><td>Unlimited, local only</td><td><a href="https://ollama.com" target="_blank">ollama.com</a></td></tr>
+          <tr><td>Groq</td><td>14,400 req/day</td><td><a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a></td></tr>
+          <tr><td>OpenRouter</td><td>Free models available</td><td><a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></td></tr>
+          <tr><td>Google Gemini</td><td>15 RPM, 1M TPM free</td><td><a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></td></tr>
+          <tr><td>HuggingFace</td><td>Rate-limited inference</td><td><a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/tokens</a></td></tr>
+          <tr><td>Mistral AI</td><td>Free trial credits</td><td><a href="https://console.mistral.ai/api-keys" target="_blank">console.mistral.ai</a></td></tr>
+          <tr><td>Together AI</td><td>$1 free credit</td><td><a href="https://api.together.ai/settings/api-keys" target="_blank">api.together.ai</a></td></tr>
+          <tr><td>Cohere</td><td>1000 req/month trial</td><td><a href="https://dashboard.cohere.com/api-keys" target="_blank">dashboard.cohere.com</a></td></tr>
+          <tr><td>Perplexity</td><td>Paid only ($5 min)</td><td><a href="https://www.perplexity.ai/settings/api" target="_blank">perplexity.ai/settings</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /settings-body -->
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+'use strict';
+
+// ── Provider metadata (badges, display) ───────────────────────────────────
+const PROVIDER_META = {
+  ollama:      { badge: 'local',  badgeLabel: 'LOCAL',  noKey: true  },
+  groq:        { badge: 'free',   badgeLabel: 'FREE'                 },
+  openrouter:  { badge: 'free',   badgeLabel: 'FREE'                 },
+  gemini:      { badge: 'free',   badgeLabel: 'FREE'                 },
+  huggingface: { badge: 'free',   badgeLabel: 'FREE'                 },
+  mistral:     { badge: 'trial',  badgeLabel: 'TRIAL'                },
+  together:    { badge: 'trial',  badgeLabel: 'TRIAL'                },
+  cohere:      { badge: 'trial',  badgeLabel: 'TRIAL'                },
+  perplexity:  { badge: 'paid',   badgeLabel: 'PAID'                 },
+};
+
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info', ttl = 4500) {
+  const icons = {success:'✅',error:'❌',info:'💡',warn:'⚠️'};
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="toast-icon">${icons[type]||'💬'}</span><span class="toast-msg">${esc(msg)}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  const rm = () => { el.classList.add('removing'); setTimeout(()=>el.remove(), 240); };
+  const tid = setTimeout(rm, ttl);
+  el.addEventListener('click', ()=>{ clearTimeout(tid); rm(); });
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function renderProviders(providers) {
+  const list = document.getElementById('providerList');
+  const banner = document.getElementById('noProviderBanner');
+  const hasActive = providers.some(p => p.is_active);
+  banner.classList.toggle('show', !hasActive);
+
+  list.innerHTML = providers.map(p => {
+    const meta     = PROVIDER_META[p.slug] || {};
+    const isActive = !!p.is_active;
+    const hasKey   = !!p.api_key;   // api_key here is the masked string from backend
+    const dotColor = isActive && (meta.noKey || hasKey) ? 'var(--green)' : isActive ? '#f59e0b' : 'var(--border)';
+
+    return `
+<div class="provider-card ${isActive ? 'active-card' : ''}" id="card-${p.slug}" data-slug="${p.slug}">
+  <div class="provider-header" onclick="toggleCard('${p.slug}')">
+    <input type="radio" class="provider-radio" name="active-provider"
+           value="${p.slug}" ${isActive ? 'checked' : ''}
+           onclick="activateProvider(event,'${p.slug}')">
+    <span class="provider-name">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-right:.45rem;vertical-align:middle;"></span>
+      ${esc(p.name)}
+    </span>
+    ${meta.badge ? `<span class="badge ${meta.badge}">${meta.badgeLabel}</span>` : ''}
+    <span class="provider-toggle-icon">▾</span>
+  </div>
+
+  <div class="provider-body">
+    ${!meta.noKey ? `
+    <div class="field">
+      <label>API Key</label>
+      <div class="key-row">
+        <input type="password" id="key-${p.slug}"
+               value="${esc(p.api_key || '')}"
+               placeholder="${hasKey ? 'Keep existing key' : 'Paste your API key here'}">
+        <button class="btn-show" onclick="toggleShow('key-${p.slug}',this)">Show</button>
+      </div>
+    </div>` : `<p style="font-size:.8rem;color:var(--text-faint);margin:.75rem 0 0;">No API key needed — runs locally via Ollama.</p>`}
+
+    <div class="field">
+      <label>Model</label>
+      <input type="text" id="model-${p.slug}" value="${esc(p.model)}">
+    </div>
+
+    <div class="advanced-toggle" onclick="toggleAdvanced('${p.slug}')">
+      <span id="adv-icon-${p.slug}">▸</span> Advanced (Base URL)
+    </div>
+    <div class="advanced-fields" id="adv-${p.slug}">
+      <div class="field">
+        <label>Base URL <span style="color:var(--text-faint)">(leave blank for default)</span></label>
+        <input type="url" id="url-${p.slug}" value="${esc(p.base_url || '')}">
+      </div>
+    </div>
+
+    <div class="card-actions">
+      <button class="btn-save" onclick="saveProvider('${p.slug}')">Save</button>
+      <button class="btn-test" onclick="testProvider('${p.slug}')">Test Connection</button>
+      <span class="test-result" id="test-${p.slug}"></span>
+    </div>
+  </div>
+</div>`;
+  }).join('');
+
+  // Auto-expand the active card
+  const active = providers.find(p => p.is_active);
+  if (active) {
+    document.getElementById(`card-${active.slug}`)?.classList.add('expanded');
+  }
+}
+
+// ── Card toggle ────────────────────────────────────────────────────────────
+function toggleCard(slug) {
+  const card = document.getElementById(`card-${slug}`);
+  card?.classList.toggle('expanded');
+}
+
+// ── Advanced toggle ────────────────────────────────────────────────────────
+function toggleAdvanced(slug) {
+  const fields = document.getElementById(`adv-${slug}`);
+  const icon   = document.getElementById(`adv-icon-${slug}`);
+  const open   = fields.classList.toggle('open');
+  if (icon) icon.textContent = open ? '▾' : '▸';
+}
+
+// ── Show/hide key ──────────────────────────────────────────────────────────
+function toggleShow(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.type = input.type === 'password' ? 'text' : 'password';
+  btn.textContent = input.type === 'password' ? 'Show' : 'Hide';
+}
+
+// ── Activate provider ──────────────────────────────────────────────────────
+async function activateProvider(event, slug) {
+  event.stopPropagation();
+  try {
+    const r = await fetch(`/api/providers/${slug}/activate`, { method: 'POST' });
+    if (!r.ok) { const d = await r.json(); throw new Error(d.error); }
+    toast(`${slug} set as active provider`, 'success');
+    await loadProviders();
+  } catch(err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ── Save provider ──────────────────────────────────────────────────────────
+async function saveProvider(slug) {
+  const btn      = document.querySelector(`#card-${slug} .btn-save`);
+  const keyInput = document.getElementById(`key-${slug}`);
+  const model    = document.getElementById(`model-${slug}`)?.value?.trim();
+  const url      = document.getElementById(`url-${slug}`)?.value?.trim();
+
+  // Only send key if the user typed something new (not the masked placeholder)
+  const keyVal = keyInput?.value?.trim();
+  const apiKey = (keyVal && !keyVal.startsWith('••')) ? keyVal : undefined;
+
+  const body = {};
+  if (apiKey !== undefined) body.api_key = apiKey;
+  if (model)                body.model   = model;
+  if (url !== undefined)    body.base_url = url;
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  try {
+    const r = await fetch(`/api/providers/${slug}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    toast(`${slug} saved!`, 'success');
+    await loadProviders();
+  } catch(err) {
+    toast(err.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+  }
+}
+
+// ── Test provider ──────────────────────────────────────────────────────────
+async function testProvider(slug) {
+  const btn    = document.querySelector(`#card-${slug} .btn-test`);
+  const result = document.getElementById(`test-${slug}`);
+  if (btn)    { btn.disabled = true; btn.textContent = 'Testing...'; }
+  if (result) { result.className = 'test-result'; result.textContent = ''; }
+
+  try {
+    const r = await fetch(`/api/providers/${slug}/test`, { method: 'POST' });
+    const d = await r.json();
+    if (result) {
+      if (d.ok) {
+        result.className = 'test-result ok';
+        result.textContent = `Connected (${d.latency_ms}ms)`;
+      } else {
+        result.className = 'test-result fail';
+        result.textContent = d.error || 'Connection failed';
+      }
+    }
+  } catch(err) {
+    if (result) {
+      result.className = 'test-result fail';
+      result.textContent = 'Request failed';
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Test Connection'; }
+  }
+}
+
+// ── Load providers ─────────────────────────────────────────────────────────
+async function loadProviders() {
+  try {
+    const r = await fetch('/api/providers');
+    const providers = await r.json();
+    renderProviders(providers);
+  } catch(err) {
+    console.error('Failed to load providers:', err);
+    toast('Failed to load providers.', 'error');
+  }
+}
+
+// ── API Keys ───────────────────────────────────────────────────────────────
+
+function renderApiKeys(keys) {
+  const el = document.getElementById('apiKeyList');
+  if (!keys.length) {
+    el.innerHTML = '<p style="font-size:.8rem;color:var(--text-faint);">No API keys yet. Create one below.</p>';
+    return;
+  }
+  el.innerHTML = keys.map(k => {
+    const active  = k.is_active;
+    const created = k.created_at ? k.created_at.replace('T',' ').slice(0,16) : '—';
+    const used    = k.last_used_at ? k.last_used_at.replace('T',' ').slice(0,16) : 'never';
+    return `
+<div class="apikey-card">
+  <span class="badge ${active ? 'badge-active' : 'badge-revoked'}">${active ? 'ACTIVE' : 'REVOKED'}</span>
+  <span class="apikey-prefix">${esc(k.key_prefix)}…</span>
+  <span class="apikey-name">${esc(k.name)}</span>
+  <span class="apikey-meta">Created: ${created}<br>Last used: ${used}</span>
+  <div class="apikey-actions">
+    ${active ? `<button class="btn-revoke" onclick="revokeKey(${k.id})">Revoke</button>` : ''}
+    <button class="btn-del" onclick="deleteKey(${k.id})">Delete</button>
+  </div>
+</div>`;
+  }).join('');
+}
+
+async function loadApiKeys() {
+  try {
+    const r = await fetch('/api/api-keys');
+    const keys = await r.json();
+    renderApiKeys(keys);
+  } catch(err) {
+    document.getElementById('apiKeyList').innerHTML =
+      '<p style="font-size:.8rem;color:#fca5a5;">Failed to load API keys.</p>';
+  }
+}
+
+async function createApiKey() {
+  const nameInput = document.getElementById('newKeyName');
+  const name = nameInput.value.trim();
+  if (!name) { toast('Enter a name for the key.', 'warn'); return; }
+
+  const btn = document.querySelector('.btn-create-key');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try {
+    const r = await fetch('/api/api-keys', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    nameInput.value = '';
+    showKeyModal(d.key);
+    await loadApiKeys();
+  } catch(err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '+ Create Key';
+  }
+}
+
+async function revokeKey(id) {
+  if (!confirm('Revoke this API key? It will stop working immediately.')) return;
+  try {
+    const r = await fetch(`/api/api-keys/${id}/revoke`, { method: 'POST' });
+    if (!r.ok) { const d = await r.json(); throw new Error(d.error); }
+    toast('Key revoked.', 'success');
+    await loadApiKeys();
+  } catch(err) { toast(err.message, 'error'); }
+}
+
+async function deleteKey(id) {
+  if (!confirm('Permanently delete this API key?')) return;
+  try {
+    const r = await fetch(`/api/api-keys/${id}`, { method: 'DELETE' });
+    if (!r.ok) { const d = await r.json(); throw new Error(d.error); }
+    toast('Key deleted.', 'success');
+    await loadApiKeys();
+  } catch(err) { toast(err.message, 'error'); }
+}
+
+function showKeyModal(rawKey) {
+  document.getElementById('modalKeyValue').textContent = rawKey;
+  document.getElementById('keyModal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('keyModal').classList.remove('open');
+  document.getElementById('modalKeyValue').textContent = '';
+}
+function copyKey() {
+  const val = document.getElementById('modalKeyValue').textContent;
+  navigator.clipboard.writeText(val).then(() => toast('Key copied to clipboard!', 'success'));
+}
+
+// Close modal on overlay click
+document.getElementById('keyModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+loadProviders();
+loadApiKeys();
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  window.location.href = '/login';
+});
+</script>
+
+</body>
+</html>

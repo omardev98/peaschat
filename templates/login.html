@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LocalChat — Login</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <style>
+    /* ── Login page overrides ─────────────────────────────────────── */
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--bg);
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 40px 36px 36px;
+      box-shadow: 0 24px 64px rgba(0,0,0,.45);
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .login-logo-icon {
+      font-size: 2.8rem;
+      display: block;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 18px rgba(124,58,237,.5));
+    }
+
+    .login-logo-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #a78bfa;
+      letter-spacing: -.3px;
+    }
+
+    .login-logo-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .login-form { display: flex; flex-direction: column; gap: 16px; }
+
+    .login-field { display: flex; flex-direction: column; gap: 6px; }
+
+    .login-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+    }
+
+    .login-input {
+      width: 100%;
+      padding: 11px 14px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color var(--t), box-shadow var(--t);
+    }
+
+    .login-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .login-input::placeholder { color: var(--text-faint); }
+
+    .login-btn {
+      margin-top: 6px;
+      padding: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      transition: background var(--t), transform var(--t);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .login-btn:hover:not(:disabled) { background: var(--accent-h); }
+    .login-btn:active:not(:disabled) { transform: scale(.98); }
+    .login-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    .login-error {
+      display: none;
+      background: rgba(239,68,68,.12);
+      border: 1px solid rgba(239,68,68,.3);
+      color: #fca5a5;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .login-error.visible { display: block; }
+
+    /* Spinner */
+    .spin {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .loading .spin { display: block; }
+    .loading .btn-text { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="login-card">
+
+    <div class="login-logo">
+      <span class="login-logo-icon">🧠</span>
+      <div class="login-logo-title">LocalChat</div>
+      <div class="login-logo-sub">AI Document Assistant</div>
+    </div>
+
+    <form class="login-form" id="loginForm" novalidate autocomplete="off">
+
+      <div class="login-field">
+        <label class="login-label" for="username">Username</label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          class="login-input"
+          placeholder="admin"
+          autocomplete="username"
+          spellcheck="false"
+          required
+        />
+      </div>
+
+      <div class="login-field">
+        <label class="login-label" for="password">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          class="login-input"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          required
+        />
+      </div>
+
+      <div class="login-error" id="loginError"></div>
+
+      <button type="submit" class="login-btn" id="loginBtn">
+        <div class="spin" id="loginSpin"></div>
+        <span class="btn-text">Sign in</span>
+      </button>
+
+    </form>
+  </div>
+
+  <script>
+    const form    = document.getElementById('loginForm');
+    const btn     = document.getElementById('loginBtn');
+    const errBox  = document.getElementById('loginError');
+    const userIn  = document.getElementById('username');
+    const passIn  = document.getElementById('password');
+
+    function showError(msg) {
+      errBox.textContent = msg;
+      errBox.classList.add('visible');
+    }
+    function clearError() {
+      errBox.classList.remove('visible');
+    }
+    function setLoading(v) {
+      btn.disabled = v;
+      btn.classList.toggle('loading', v);
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError();
+
+      const username = userIn.value.trim();
+      const password = passIn.value;
+
+      if (!username || !password) {
+        showError('Please enter your username and password.');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res  = await fetch('/api/auth/login', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          // Redirect to the page originally requested (or home)
+          const params = new URLSearchParams(window.location.search);
+          window.location.href = params.get('next') || '/';
+        } else {
+          showError(data.error || 'Invalid credentials.');
+          passIn.value = '';
+          passIn.focus();
+        }
+      } catch (_) {
+        showError('Network error — please try again.');
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    // Auto-focus username on load
+    userIn.focus();
+  </script>
+</body>
+</html>

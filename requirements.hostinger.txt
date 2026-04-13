@@ -1,0 +1,29 @@
+# requirements.hostinger.txt
+# Use this on Hostinger shared hosting (no Ollama, no Tesseract OCR).
+# SSH: pip install -r requirements.hostinger.txt
+
+# Web framework
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# PDF parsing
+pdfplumber>=0.11.0
+
+# HTTP client
+requests>=2.32.0
+
+# Utilities
+python-dotenv>=1.0.0
+
+# Cloud AI clients (install only the ones you use)
+openai>=1.30.0          # OpenRouter, Perplexity, Together (OpenAI-compatible)
+google-generativeai>=0.7.0
+cohere>=5.0.0
+
+# NOTE: The following are NOT needed on shared hosting:
+# waitress       — Hostinger uses Passenger (not waitress)
+# langchain*     — only needed for local RAG / Ollama
+# faiss-cpu      — only needed for local vector search
+# pytesseract    — Tesseract is not installed on shared hosting
+# Pillow         — only needed for image OCR
+# numpy          — only needed for FAISS embeddings

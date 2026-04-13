@@ -1,0 +1,16 @@
+# ── Hostinger Python App (Phusion Passenger) ─────────────────────────────
+# This file is required so Apache hands all requests to Passenger / Flask.
+# Do NOT remove it.
+
+Options -Indexes
+Options -MultiViews
+
+# Tell Passenger this is a Python app
+PassengerEnabled On
+PassengerAppType wsgi
+PassengerStartupFile passenger_wsgi.py
+
+# Forward everything that isn't a real static file to Flask
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ passenger_wsgi.py/$1 [L]

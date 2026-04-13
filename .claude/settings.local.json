@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python run.py --port 7860)",
+      "Bash(pip install:*)",
+      "Bash(python -m pip install --upgrade pip)",
+      "Bash(where python:*)",
+      "Bash(where python3:*)",
+      "Bash(C:/Python312/python.exe -m pip install pdfplumber)",
+      "Bash(C:/Python312/python.exe -m pip install -r requirements.txt)",
+      "Bash(C:/Python312/python.exe -m pip install -r requirements.txt --user)",
+      "Bash(C:/Python312/python.exe run.py --port 7860)",
+      "Bash(taskkill //F //IM python.exe //FI \"WINDOWTITLE eq *local-chat*\")",
+      "Bash(pkill -f \"run.py --port 7860\")",
+      "Bash(netstat -ano)",
+      "Bash(taskkill:*)",
+      "Bash(C:/Python312/python.exe:*)",
+      "Bash(python run.py)",
+      "Bash(python -m pip install --upgrade pip --user)",
+      "Bash(python:*)",
+      "Bash(py -3.12 --version)",
+      "Bash(py -3.11 --version)",
+      "Bash(py -3.10 --version)",
+      "Bash(py -3.9 --version)",
+      "Bash(py -3.8 --version)",
+      "Bash(py:*)",
+      "Bash(grep -E \"\\\\.py$\")",
+      "Bash(pkill -f \"run.py\")",
+      "Bash(cmd:*)",
+      "Bash(PYTHONIOENCODING=utf-8 py -3.12 run_tests.py)"
+    ]
+  }
+}
